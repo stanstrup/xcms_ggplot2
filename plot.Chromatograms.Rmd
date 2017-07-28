@@ -80,7 +80,7 @@ plot(bpis, col = paste0(sample_colors[raw_data$sample_group], "80"))
 
 ```{r}
 # function that make the basic ggplot
-plotChromatogams <- function(bpis, rt_unit = "sec", fileAnno = NULL) {
+plotChromatograms <- function(bpis, rt_unit = "sec", fileAnno = NULL) {
         require(ggplot2)
         bpis_long <- .ChromatogramsLongFormat(bpis, fileAnno = fileAnno)
         
@@ -105,12 +105,12 @@ plotChromatogams <- function(bpis, rt_unit = "sec", fileAnno = NULL) {
 # User function in action -------------------------------------------------
 Basic plot
 ```{r}
-plotChromatogams(bpis)
+plotChromatograms(bpis)
 ```
 
 Use minutes instead
 ```{r}
-p <- plotChromatogams(bpis, rt_unit = "min")
+p <- plotChromatograms(bpis, rt_unit = "min")
 p
 ```
 
@@ -137,7 +137,7 @@ We can then use the columns in this table to modify the plot
 ```{r}
 fileAnno <- data.frame(sample_group = raw_data$sample_group)
 
-p <- plotChromatogams(bpis, rt_unit = "min", fileAnno = fileAnno) +
+p <- plotChromatograms(bpis, rt_unit = "min", fileAnno = fileAnno) +
 aes(color=sample_group)
 
 p
