@@ -8,14 +8,14 @@ output: html_document
 
 
 # Get some test data ------------------------------------------------------
-Libraries
+## Libraries
 ```{r, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(fig.width=12, fig.height=8) 
 library(MSnbase)
 library(xcms)
 ```
 
-Reading the raw data using the MSnbase package
+## Reading the raw data using the MSnbase package
 ```{r}
 ## Load 6 of the CDF files from the faahKO
 cdf_files <- dir(system.file("cdf", package = "faahKO"), recursive = TRUE,
@@ -56,8 +56,8 @@ plot(bpis, col = paste0(sample_colors[raw_data$sample_group], "80"))
 
 
 # Functions to do the plotting with ggplot2 -------------------------------
+## Functions to get chromatograms in long format for ggplot2
 ```{r}
-# Functions to get chromatograms in long format for ggplot2
 .ChromatogramLongFormat <- function(x){
         data.frame(rtime = x@rtime, intensity = x@intensity, fromFile = x@fromFile, row.names = NULL, stringsAsFactors = FALSE)
 }
@@ -78,8 +78,8 @@ plot(bpis, col = paste0(sample_colors[raw_data$sample_group], "80"))
 }
 ```
 
+## function that make the basic ggplot
 ```{r}
-# function that make the basic ggplot
 plotChromatograms <- function(bpis, rt_unit = "sec", fileAnno = NULL) {
         require(ggplot2)
         bpis_long <- .ChromatogramsLongFormat(bpis, fileAnno = fileAnno)
@@ -103,12 +103,12 @@ plotChromatograms <- function(bpis, rt_unit = "sec", fileAnno = NULL) {
 
 
 # User function in action -------------------------------------------------
-Basic plot
+## Basic plot
 ```{r}
 plotChromatograms(bpis)
 ```
 
-Use minutes instead
+## Use minutes instead
 ```{r}
 p <- plotChromatograms(bpis, rt_unit = "min")
 p
@@ -116,13 +116,15 @@ p
 
 
 
-color by sample assigning a new color to each sample using default ggplot2 color
+## color by sample...
+... assigning a new color to each sample using default ggplot2 color
 ```{r}
 p + aes(color=as.factor(fromFile))
 ```
 
-# define color for each file manually
-# this does the same as the original base plot
+## define color for each file manually
+This does the same as the original base plot
+
 ```{r}
 col <- paste0(sample_colors[raw_data$sample_group], "80")
 names(col) <- 1:length(col)
@@ -131,7 +133,7 @@ p + aes(color=as.factor(fromFile)) +
     scale_colour_manual(name = "File", values = col)
 ```
 
-
+## Use injected sample info
 We can instead add some info about each sample
 We can then use the columns in this table to modify the plot
 ```{r}
@@ -143,7 +145,7 @@ aes(color=sample_group)
 p
 ```
 
-Manually define colors
+## Manually define colors
 ```{r}
 p + scale_colour_manual(name = "Group", values = sample_colors)
 ```
@@ -151,6 +153,6 @@ p + scale_colour_manual(name = "Group", values = sample_colors)
 
 
 
-#TODO
+# TODO
 * handle several mz-ranges
 
