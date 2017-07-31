@@ -46,7 +46,12 @@ Read the data and extract chromatograms
 
 raw_data <- readMSData2(cdf_files, pdata = new("NAnnotatedDataFrame", pheno)) 
 
-bpis <- chromatogram(raw_data, aggregationFun = "max")
+# here we do some arbitrary mz and rt intervals to show how that would work
+# This does not need to be supplied to get TICs and BPIs
+rtr <- rbind(c(45*60, 55*60), c(65*60, 70*60))
+mzr <- rbind(c(200, 220), c(300, 320))
+
+bpis <- chromatogram(raw_data, rt = rtr, mz = mzr, aggregationFun = "max")
 
 bpis
 ```
@@ -86,14 +91,22 @@ plot(bpis, col = col)
 ## Functions to get chromatograms in long format for ggplot2
 ```{r}
 .ChromatogramLongFormat <- function(x){
-        data.frame(rtime = x@rtime, intensity = x@intensity, fromFile = x@fromFile, row.names = NULL, stringsAsFactors = FALSE)
+        data.frame(rtime = x@rtime, 
+                   intensity = x@intensity, 
+                   fromFile = x@fromFile, 
+                   mz_interval = paste0(x@filterMz[1]," - ",paste0(x@filterMz[2])), 
+                   row.names = NULL, 
+                   stringsAsFactors = FALSE
+                   )
 }
 ```
         
 ```{r}
 .ChromatogramsLongFormat <- function(x, pdata = NULL){
-        out <- lapply(x@.Data, .ChromatogramLongFormat)
-        out <- do.call(rbind.data.frame,out)
+        table <- lapply(x@.Data, .ChromatogramLongFormat)
+        table <- do.call(rbind.data.frame,table)
+        
+        table$mz_interval <- as.factor(table$mz_interval)
         
         # if we supplied pdata add the corresponding annotation to each row
         if(!is.null(pdata)){
@@ -104,10 +117,10 @@ plot(bpis, col = col)
                 
                 pdata <- cbind.data.frame(fromFile =  1:nrow(pdata), pdata@data, text = text, stringsAsFactors = FALSE)
                 
-                out <- merge(out, pdata, all.y = TRUE,  by = "fromFile")
+                table <- merge(table, pdata, all.y = TRUE,  by = "fromFile")
         }
         
-        return(out)
+        return(table)
 }
 ```
 
@@ -128,7 +141,7 @@ ggplotChromatograms <- function(bpis, rt_unit = "sec", pdata = NULL) {
         
         names(bpis_long)[names(bpis_long) == 'rtime'] <- 'Retention time'
         
-        p <- ggplot(data = bpis_long, aes(x = `Retention time`, y = intensity, group = fromFile)) + 
+        p <- ggplot(data = bpis_long, aes(x = `Retention time`, y = intensity, group = interaction(fromFile,mz_interval))) + 
                 geom_line() +
                 theme_classic() +
                 labs(x = x_lab, y = "Intensity")
@@ -202,8 +215,16 @@ ggplotly(p, dynamicTicks = TRUE)
 
 ```
 
+<br>
+You can also split by the mz interval group.
+```{r}
+p <- p + facet_wrap(~mz_interval, scales = "free")
+
+ggplotly(p, dynamicTicks = TRUE)
+
+```
 
 # TODO
-* handle several mz-ranges
+* clean up tooltip
 * filename in tooltip
 * scannumber in tooltip
