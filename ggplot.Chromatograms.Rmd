@@ -109,6 +109,10 @@ plot(bpis, col = col)
         
         table$mz_interval <- as.factor(table$mz_interval)
         
+        # add filename
+        filename <- cbind.data.frame(fromFile =  1:attributes(x)$dim[2], filename = attributes(x)$dimnames[[2]], stringsAsFactors = FALSE)
+        table <- merge(table, filename, all.y = TRUE,  by = "fromFile")
+        
         # if we supplied pdata add the corresponding annotation to each row
         if(!is.null(pdata)){
                 
@@ -141,9 +145,9 @@ ggplotChromatograms <- function(bpis, rt_unit = "sec", pdata = NULL) {
                 x_lab <- "Retention time (sec)"
         }
         
-        # if pdate is supplied add it otherwise only the scan number goes to the text field
+        # if pdate is supplied add it otherwise only the scan number and filename goes to the text field
         if(!is.null(pdata)){
-                bpis_long <- transform(bpis_long, text=paste0("scan: ",scan,"<br>",text))
+                bpis_long <- transform(bpis_long, text=paste0("filename: ", filename, "<br>","scan: ",scan,"<br>",text))
         }else{
                 bpis_long <- transform(bpis_long, text=paste0("scan: ", scan))
         }
@@ -237,4 +241,4 @@ ggplotly(p, dynamicTicks = TRUE)
 
 # TODO
 * clean up tooltip
-* filename in tooltip
+* make sure it works both with Chromatogram and Chromatograms classes
