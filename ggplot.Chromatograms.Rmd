@@ -92,7 +92,8 @@ plot(bpis, col = col)
 ```{r}
 .ChromatogramLongFormat <- function(x){
         data.frame(rtime = x@rtime, 
-                   intensity = x@intensity, 
+                   intensity = x@intensity,
+                   scan = 1:length(x@rtime),
                    fromFile = x@fromFile, 
                    mz_interval = paste0(x@filterMz[1]," - ",paste0(x@filterMz[2])), 
                    row.names = NULL, 
@@ -130,6 +131,7 @@ ggplotChromatograms <- function(bpis, rt_unit = "sec", pdata = NULL) {
         require(ggplot2)
         bpis_long <- .ChromatogramsLongFormat(bpis, pdata = pdata)
         
+        # show in sec or min
         if(rt_unit=="min"){
                 bpis_long$rtime <- bpis_long$rtime/60
                 x_lab <- "Retention time (min)"
@@ -139,14 +141,23 @@ ggplotChromatograms <- function(bpis, rt_unit = "sec", pdata = NULL) {
                 x_lab <- "Retention time (sec)"
         }
         
+        # if pdate is supplied add it otherwise only the scan number goes to the text field
+        if(!is.null(pdata)){
+                bpis_long <- transform(bpis_long, text=paste0("scan: ",scan,"<br>",text))
+        }else{
+                bpis_long <- transform(bpis_long, text=paste0("scan: ", scan))
+        }
+        
+        # Prettier name for RT
         names(bpis_long)[names(bpis_long) == 'rtime'] <- 'Retention time'
         
-        p <- ggplot(data = bpis_long, aes(x = `Retention time`, y = intensity, group = interaction(fromFile,mz_interval))) + 
+        # actual plot
+        p <- ggplot(data = bpis_long, aes(x = `Retention time`, y = intensity, text = text, group = interaction(fromFile,mz_interval))) + 
                 geom_line() +
                 theme_classic() +
                 labs(x = x_lab, y = "Intensity")
         
-        if(!is.null(pdata)){ p <- p + aes(text = text) }
+        
         
         return(p)
 }
@@ -227,4 +238,3 @@ ggplotly(p, dynamicTicks = TRUE)
 # TODO
 * clean up tooltip
 * filename in tooltip
-* scannumber in tooltip
