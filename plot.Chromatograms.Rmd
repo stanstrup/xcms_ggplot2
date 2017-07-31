@@ -1,53 +1,80 @@
 ---
-title: "xcms ggplot2"
+title: "Msnbase ggplot2"
 author: "Jan Stanstrup"
-date: "28 jul 2017"
+date: "31 jul 2017"
 output: html_document
 ---
 
 
 
-# Get some test data ------------------------------------------------------
+# Get some test data
 ## Libraries
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, echo = -1}
 knitr::opts_chunk$set(fig.width=12, fig.height=8) 
 library(MSnbase)
-library(xcms)
 ```
 
-## Reading the raw data using the MSnbase package
+## Get Chromatograms object using the MSnbase package
+Load 6 of the CDF files from the faahKO
 ```{r}
-## Load 6 of the CDF files from the faahKO
 cdf_files <- dir(system.file("cdf", package = "faahKO"), recursive = TRUE,
 		 full.names = TRUE)[c(1:3, 7:9)]
+```
 
-## Define the sample grouping.
+<br>
+Define the sample grouping.
+```{r}
 s_groups <- rep("KO", length(cdf_files))
 s_groups[grep(cdf_files, pattern = "WT")] <- "WT"
 
-## Define a data.frame that will be used as phenodata
+s_groups
+```
+
+<br>
+Define a data.frame that will be used as phenodata
+```{r}
 pheno <- data.frame(sample_name = sub(basename(cdf_files), pattern = ".CDF",
 				      replacement = "", fixed = TRUE),
 		    sample_group = s_groups, stringsAsFactors = FALSE)
 
-## Read the data.
+pheno
+```
+
+<br>
+Read the data and extract chromatograms
+```{r}
+
 raw_data <- readMSData2(cdf_files, pdata = new("NAnnotatedDataFrame", pheno)) 
 
-
-# Extract chromatograms
 bpis <- chromatogram(raw_data, aggregationFun = "max")
+
+bpis
 ```
 
 
+<br><br>
 
+# Current baseplot
 
-# Current baseplot --------------------------------------------------------
+# some different ways to define the colors we will be using
 ```{r}
 library(RColorBrewer)
 sample_colors <- brewer.pal(3, "Set1")[1:2]
 names(sample_colors) <- c("KO", "WT")
 
-plot(bpis, col = paste0(sample_colors[raw_data$sample_group], "80"))
+sample_colors
+```
+
+
+```{r}
+col <- paste0(sample_colors[raw_data$sample_group], "80")
+col
+```
+
+The "base" plot using the plotting feature from MSnbase.
+
+```{r}
+plot(bpis, col = col)
 ```
 
 
@@ -55,7 +82,7 @@ plot(bpis, col = paste0(sample_colors[raw_data$sample_group], "80"))
 
 
 
-# Functions to do the plotting with ggplot2 -------------------------------
+# Functions to do the plotting with ggplot2
 ## Functions to get chromatograms in long format for ggplot2
 ```{r}
 .ChromatogramLongFormat <- function(x){
@@ -64,14 +91,14 @@ plot(bpis, col = paste0(sample_colors[raw_data$sample_group], "80"))
 ```
         
 ```{r}
-.ChromatogramsLongFormat <- function(x, fileAnno = NULL){
+.ChromatogramsLongFormat <- function(x, pdata = NULL){
         out <- lapply(x@.Data, .ChromatogramLongFormat)
         out <- do.call(rbind.data.frame,out)
         
-        # if we supplied fileAnno add the corresponding annotation to each row
-        if(!is.null(fileAnno)){
-         fileAnno <- cbind.data.frame(fromFile =  1:nrow(fileAnno), fileAnno, stringsAsFactors = FALSE)
-         out <- merge(out, fileAnno, all.y = TRUE,  by = "fromFile")
+        # if we supplied pdata add the corresponding annotation to each row
+        if(!is.null(pdata)){
+         pdata <- cbind.data.frame(fromFile =  1:nrow(pdata), pdata@data, stringsAsFactors = FALSE)
+         out <- merge(out, pdata, all.y = TRUE,  by = "fromFile")
         }
         
         return(out)
@@ -80,9 +107,9 @@ plot(bpis, col = paste0(sample_colors[raw_data$sample_group], "80"))
 
 ## function that make the basic ggplot
 ```{r}
-plotChromatograms <- function(bpis, rt_unit = "sec", fileAnno = NULL) {
+ggplotChromatograms <- function(bpis, rt_unit = "sec", pdata = NULL) {
         require(ggplot2)
-        bpis_long <- .ChromatogramsLongFormat(bpis, fileAnno = fileAnno)
+        bpis_long <- .ChromatogramsLongFormat(bpis, pdata = pdata)
         
         if(rt_unit=="min"){
                 bpis_long$rtime <- bpis_long$rtime/60
@@ -102,15 +129,15 @@ plotChromatograms <- function(bpis, rt_unit = "sec", fileAnno = NULL) {
 
 
 
-# User function in action -------------------------------------------------
+# User function in action
 ## Basic plot
 ```{r}
-plotChromatograms(bpis)
+ggplotChromatograms(bpis)
 ```
 
 ## Use minutes instead
 ```{r}
-p <- plotChromatograms(bpis, rt_unit = "min")
+p <- ggplotChromatograms(bpis, rt_unit = "min")
 p
 ```
 
@@ -126,7 +153,6 @@ p + aes(color=as.factor(fromFile))
 This does the same as the original base plot
 
 ```{r}
-col <- paste0(sample_colors[raw_data$sample_group], "80")
 names(col) <- 1:length(col)
 
 p + aes(color=as.factor(fromFile)) +
@@ -137,9 +163,9 @@ p + aes(color=as.factor(fromFile)) +
 We can instead add some info about each sample
 We can then use the columns in this table to modify the plot
 ```{r}
-fileAnno <- data.frame(sample_group = raw_data$sample_group)
 
-p <- plotChromatograms(bpis, rt_unit = "min", fileAnno = fileAnno) +
+
+p <- ggplotChromatograms(bpis, rt_unit = "min", pdata = new("NAnnotatedDataFrame", pheno)) +
 aes(color=sample_group)
 
 p
