@@ -97,8 +97,14 @@ plot(bpis, col = col)
         
         # if we supplied pdata add the corresponding annotation to each row
         if(!is.null(pdata)){
-         pdata <- cbind.data.frame(fromFile =  1:nrow(pdata), pdata@data, stringsAsFactors = FALSE)
-         out <- merge(out, pdata, all.y = TRUE,  by = "fromFile")
+                
+                # we merge the pdata columns to be able to supply a text column that can be shown in plotly tooltips
+                text <- lapply(names(pdata@data), function(x) paste0(x,": " , as.character(as.matrix(pdata@data[x])),"<br>"))
+                text <- apply(as.data.frame(text),1,paste, collapse="")
+                
+                pdata <- cbind.data.frame(fromFile =  1:nrow(pdata), pdata@data, text = text, stringsAsFactors = FALSE)
+                
+                out <- merge(out, pdata, all.y = TRUE,  by = "fromFile")
         }
         
         return(out)
@@ -120,10 +126,16 @@ ggplotChromatograms <- function(bpis, rt_unit = "sec", pdata = NULL) {
                 x_lab <- "Retention time (sec)"
         }
         
-        ggplot(data = bpis_long, aes(x = rtime, y = intensity, group = fromFile)) + 
+        names(bpis_long)[names(bpis_long) == 'rtime'] <- 'Retention time'
+        
+        p <- ggplot(data = bpis_long, aes(x = `Retention time`, y = intensity, group = fromFile)) + 
                 geom_line() +
                 theme_classic() +
                 labs(x = x_lab, y = "Intensity")
+        
+        if(!is.null(pdata)){ p <- p + aes(text = text) }
+        
+        return(p)
 }
 ```
 
@@ -160,11 +172,10 @@ p + aes(color=as.factor(fromFile)) +
 ```
 
 ## Use injected sample info
-We can instead add some info about each sample
-We can then use the columns in this table to modify the plot
+We can instead add some info about each sample.<br>
+We can then use the columns in this table to modify the plot.
+
 ```{r}
-
-
 p <- ggplotChromatograms(bpis, rt_unit = "min", pdata = new("NAnnotatedDataFrame", pheno)) +
 aes(color=sample_group)
 
@@ -176,9 +187,23 @@ p
 p + scale_colour_manual(name = "Group", values = sample_colors)
 ```
 
+<br><br>
+# Interactivity with plotly
 
+We can easily make an interactive plot now.<br>
+Notice the hover over text.
+
+```{r}
+library(plotly)
+p <- p + 
+        scale_colour_manual(name = "Group", values = sample_colors)
+
+ggplotly(p, dynamicTicks = TRUE)
+
+```
 
 
 # TODO
 * handle several mz-ranges
-
+* filename in tooltip
+* scannumber in tooltip
