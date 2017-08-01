@@ -93,7 +93,7 @@ plot(bpis, col = col)
 .ChromatogramLongFormat <- function(x){
         data.frame(rtime = x@rtime, 
                    intensity = x@intensity,
-                   scan = 1:length(x@rtime),
+                   spectrum_id = names(x@rtime),
                    fromFile = x@fromFile, 
                    mz_interval = paste0(x@filterMz[1]," - ",paste0(x@filterMz[2])), 
                    row.names = NULL, 
@@ -145,11 +145,11 @@ ggplotChromatograms <- function(bpis, rt_unit = "sec", pdata = NULL) {
                 x_lab <- "Retention time (sec)"
         }
         
-        # if pdate is supplied add it otherwise only the scan number and filename goes to the text field
+        # if pdate is supplied add it otherwise only the spectrum_id and filename goes to the text field
         if(!is.null(pdata)){
-                bpis_long <- transform(bpis_long, text=paste0("filename: ", filename, "<br>","scan: ",scan,"<br>",text))
+                bpis_long <- transform(bpis_long, text=paste0("filename: ", filename, "<br>","spectrum_id: ",spectrum_id,"<br>",text))
         }else{
-                bpis_long <- transform(bpis_long, text=paste0("scan: ", scan))
+                bpis_long <- transform(bpis_long, text=paste0("filename: ", filename, "<br>","spectrum_id: ", spectrum_id))
         }
         
         # Prettier name for RT
